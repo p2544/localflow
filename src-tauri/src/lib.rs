@@ -80,13 +80,6 @@ pub fn run() {
                 }
             });
 
-            // Hide the main window on start when onboarding is done (tray app).
-            let st = app.state::<AppState>();
-            if st.settings.lock().onboarding_done {
-                if let Some(w) = app.get_webview_window("main") {
-                    let _ = w.hide();
-                }
-            }
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -98,8 +91,20 @@ pub fn run() {
                 }
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running LocalFlow");
+        .build(tauri::generate_context!())
+        .expect("error while building LocalFlow")
+        .run(|app, event| {
+            // macOS: clicking the Dock icon with no visible windows should
+            // bring the main window back (the app is tray-resident).
+            #[cfg(target_os = "macos")]
+            if let tauri::RunEvent::Reopen { .. } = event {
+                if let Some(w) = app.get_webview_window("main") {
+                    let _ = w.show();
+                    let _ = w.set_focus();
+                }
+            }
+            let _ = (app, &event);
+        });
 }
 
 fn show_pill(app: &tauri::AppHandle) {

@@ -314,7 +314,14 @@ impl Worker {
         };
         timings.asr_ms = t.elapsed().as_millis() as u64;
         if raw.trim().is_empty() {
-            self.emit(PipelineEvent::Empty);
+            // Audio passed VAD but whisper recognized nothing — most often a
+            // language mismatch, not silence. Say so.
+            self.emit(PipelineEvent::Error {
+                message: format!(
+                    "Heard audio but recognized no words — check Settings → Language (currently \"{}\")",
+                    self.settings.language
+                ),
+            });
             return;
         }
 
