@@ -11,11 +11,17 @@ pub struct Transcriber {
 
 impl Transcriber {
     pub fn load(model_path: &Path, threads: usize) -> Result<Self> {
+        let mut ctx_params = WhisperContextParameters::default();
+        // macOS: Metal must be compiled in (arm64 build requirement) but the
+        // bundled whisper.cpp Metal kernels return empty output on M4 — run
+        // whisper on CPU. NEON is comfortably realtime for small/turbo models.
+        #[cfg(target_os = "macos")]
+        ctx_params.use_gpu(false);
         let ctx = WhisperContext::new_with_params(
             model_path
                 .to_str()
                 .context("model path is not valid UTF-8")?,
-            WhisperContextParameters::default(),
+            ctx_params,
         )
         .context("failed to load whisper model")?;
         Ok(Self {

@@ -48,9 +48,11 @@ windows = { version = "0.61", features = [
 core-foundation = "0.10"
 core-graphics = "0.24"
 accessibility-sys = "0.1"
-# GPU acceleration on Apple Silicon for the LLM. Whisper stays on CPU:
-# the whisper.cpp bundled by whisper-rs 0.14 produced empty transcripts on
-# M4 with Metal enabled (kernel/family mismatch); NEON CPU is fast enough.
+# Apple Silicon: BOTH crates need the metal feature to COMPILE on arm64
+# (whisper-rs-sys without it hits ggml i8mm build errors). Whisper is then
+# forced to CPU at RUNTIME in asr.rs — its Metal path produced empty
+# transcripts on M4. The LLM keeps Metal at runtime.
+whisper-rs = { version = "0.14", optional = true, features = ["metal"] }
 llama-cpp-2 = { version = "0.1.122", optional = true, features = ["metal"] }
 
 [dev-dependencies]
