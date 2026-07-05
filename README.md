@@ -1,5 +1,7 @@
 # LocalFlow
 
+> Repo: https://github.com/p2544/localflow — installers for Windows/macOS are built by CI on every push (Actions → latest run → Artifacts) and attached to Releases on version tags.
+
 **Fully-local, system-wide voice dictation for Windows 11 and macOS 12+** — a privacy-first Wispr Flow alternative. Hold a hotkey anywhere, speak, release: AI-cleaned text appears in whatever text field has focus. No cloud, no account, no telemetry; the only network access is the explicit model download you trigger in the UI.
 
 ## How it works
