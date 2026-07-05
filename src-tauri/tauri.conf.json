@@ -41,12 +41,6 @@
     "macOSPrivateApi": true,
     "security": {
       "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
-    },
-    "trayIcon": {
-      "id": "main",
-      "iconPath": "icons/icon.png",
-      "iconAsTemplate": true,
-      "tooltip": "LocalFlow"
     }
   },
   "bundle": {
