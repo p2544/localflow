@@ -68,10 +68,25 @@ fn filler_re() -> &'static Regex {
     })
 }
 
-fn dup_word_re() -> &'static Regex {
-    static RE: OnceLock<Regex> = OnceLock::new();
-    // Same word twice in a row (latin scripts), case-insensitive.
-    RE.get_or_init(|| Regex::new(r"(?i)\b(\p{L}+)(\s+\1)+\b").unwrap())
+/// Drops immediately-repeated words ("the the" → "the"), case-insensitive.
+/// Token-walk instead of regex: the regex crate has no backreferences.
+fn dedup_adjacent_words(text: &str) -> String {
+    let mut out: Vec<&str> = Vec::new();
+    for tok in text.split_whitespace() {
+        if let Some(prev) = out.last() {
+            let same = prev.trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase()
+                == tok.trim_matches(|c: char| !c.is_alphanumeric()).to_lowercase();
+            // Only dedup pure word tokens so "5 5pm" or "ha, ha!" survive.
+            if same
+                && tok.chars().all(|c| c.is_alphabetic())
+                && prev.chars().all(|c| c.is_alphabetic())
+            {
+                continue;
+            }
+        }
+        out.push(tok);
+    }
+    out.join(" ")
 }
 
 /// Deterministic cleanup used when the LLM pass is skipped or disabled,
@@ -87,7 +102,7 @@ pub fn rule_based_cleanup(raw: &str) -> String {
         }
         text = next;
     }
-    text = dup_word_re().replace_all(&text, "$1").to_string();
+    text = dedup_adjacent_words(&text);
 
     // Collapse whitespace, tidy space-before-punctuation.
     let ws = Regex::new(r"[ \t]+").unwrap();

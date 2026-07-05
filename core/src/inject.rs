@@ -47,6 +47,7 @@ fn is_secure_field_focused() -> bool {
 
 /// Sets clipboard, invokes `paste_keystroke`, restores clipboard after a
 /// short delay so the paste happens against our text.
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 fn paste_via_clipboard(text: &str, paste_keystroke: impl Fn() -> Result<()>) -> Result<()> {
     let mut cb = arboard::Clipboard::new()?;
     let saved = cb.get_text().ok();

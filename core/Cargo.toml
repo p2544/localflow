@@ -51,3 +51,4 @@ accessibility-sys = "0.1"
 
 [dev-dependencies]
 tempfile = "3"
+hound = "3"

@@ -73,14 +73,9 @@ impl CleanupLlm {
                 .context("apply chat template")?,
             // Fallback: ChatML, which Qwen/Llama-3-style GGUFs understand.
             None => {
-                let mut s = String::new();
-                for m in &messages {
-                    // LlamaChatMessage exposes no getters in some versions; rebuild.
-                    let _ = m;
-                }
-                s.push_str(&format!(
+                let mut s = format!(
                     "<|im_start|>system\n{CLEANUP_SYSTEM_PROMPT}<|im_end|>\n"
-                ));
+                );
                 for (raw, cleaned) in CLEANUP_FEW_SHOT {
                     s.push_str(&format!(
                         "<|im_start|>user\n{}<|im_end|>\n<|im_start|>assistant\n{}<|im_end|>\n",
@@ -128,6 +123,7 @@ impl CleanupLlm {
             if self.model.is_eog_token(token) {
                 break;
             }
+            #[allow(deprecated)] // token_to_piece needs a persistent decoder; fine here
             let piece = self
                 .model
                 .token_to_str(token, Special::Tokenize)

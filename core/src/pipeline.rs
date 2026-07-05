@@ -366,6 +366,7 @@ impl Worker {
         Ok((raw, cleaned))
     }
 
+    #[cfg(any(feature = "asr-whisper", feature = "llm-llama"))]
     fn dictionary_words(&self) -> Vec<String> {
         crate::history::open_db()
             .and_then(|c| crate::dictionary::Dictionary::all(&c))
