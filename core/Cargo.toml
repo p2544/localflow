@@ -1,0 +1,53 @@
+[package]
+name = "localflow-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[features]
+default = ["asr-whisper", "llm-llama"]
+# Heavy native engines are feature-gated so text-logic tests can run with
+# `cargo test --no-default-features`.
+asr-whisper = ["dep:whisper-rs"]
+llm-llama = ["dep:llama-cpp-2"]
+vad-silero = ["dep:ort"]
+
+[dependencies]
+anyhow.workspace = true
+thiserror.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+tracing.workspace = true
+parking_lot.workspace = true
+crossbeam-channel.workspace = true
+directories.workspace = true
+
+cpal = "0.15"
+rubato = "0.16"
+rusqlite = { version = "0.32", features = ["bundled"] }
+arboard = "3"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "stream", "blocking"] }
+sha2 = "0.10"
+hex = "0.4"
+regex = "1"
+
+whisper-rs = { version = "0.14", optional = true }
+llama-cpp-2 = { version = "0.1.122", optional = true }
+ort = { version = "2.0.0-rc.10", optional = true, default-features = false, features = ["download-binaries", "ndarray"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = "0.61", features = [
+  "Win32_UI_Input_KeyboardAndMouse",
+  "Win32_UI_WindowsAndMessaging",
+  "Win32_UI_Accessibility",
+  "Win32_System_Com",
+  "Win32_Foundation",
+] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+core-foundation = "0.10"
+core-graphics = "0.24"
+accessibility-sys = "0.1"
+
+[dev-dependencies]
+tempfile = "3"
