@@ -38,6 +38,14 @@ pub const CLEANUP_FEW_SHOT: &[(&str, &str)] = &[
         "เอ่อ พรุ่งนี้ประชุมตอน บ่ายสอง อ๊ะ ไม่สิ บ่ายสาม นะครับ",
         "พรุ่งนี้ประชุมตอนบ่ายสามนะครับ",
     ),
+    (
+        "order three units sorry four units for the warehouse",
+        "Order 4 units for the warehouse.",
+    ),
+    (
+        "อืม ช่วยส่งรายงานยอดขายให้หน่อยนะครับ",
+        "ช่วยส่งรายงานยอดขายให้หน่อยนะครับ",
+    ),
 ];
 
 /// Builds the user-turn content for one cleanup request.
@@ -89,11 +97,12 @@ fn dedup_adjacent_words(text: &str) -> String {
     out.join(" ")
 }
 
-/// Deterministic cleanup used when the LLM pass is skipped or disabled,
-/// and as a safety pass over LLM output (whitespace, stray quotes).
-pub fn rule_based_cleanup(raw: &str) -> String {
+/// Deterministic filler/stutter strip that runs BEFORE the LLM: known
+/// fillers (EN + TH) and adjacent duplicates are unambiguous, and removing
+/// them up front keeps small local models from being distracted by them.
+/// Returns an empty string for pure-filler input (caller should skip the LLM).
+pub fn pre_llm_strip(raw: &str) -> String {
     let mut text = raw.trim().to_string();
-
     // Strip fillers repeatedly (removal can create new adjacencies).
     loop {
         let next = filler_re().replace_all(&text, "$1$3").to_string();
@@ -102,7 +111,13 @@ pub fn rule_based_cleanup(raw: &str) -> String {
         }
         text = next;
     }
-    text = dedup_adjacent_words(&text);
+    dedup_adjacent_words(&text)
+}
+
+/// Deterministic cleanup used when the LLM pass is skipped or disabled,
+/// and as a safety pass over LLM output (whitespace, stray quotes).
+pub fn rule_based_cleanup(raw: &str) -> String {
+    let mut text = pre_llm_strip(raw);
 
     // Collapse whitespace, tidy space-before-punctuation.
     let ws = Regex::new(r"[ \t]+").unwrap();

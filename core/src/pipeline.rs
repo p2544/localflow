@@ -456,8 +456,13 @@ impl Worker {
     }
 
     fn clean(&mut self, raw: &str) -> Result<String> {
-        if !self.settings.cleanup_enabled || !cleanup::should_use_llm(raw) {
-            return Ok(cleanup::rule_based_cleanup(raw));
+        // Deterministic filler strip first; LLM only sees real content.
+        let stripped = cleanup::pre_llm_strip(raw);
+        if stripped.is_empty() {
+            return Ok(String::new());
+        }
+        if !self.settings.cleanup_enabled || !cleanup::should_use_llm(&stripped) {
+            return Ok(cleanup::rule_based_cleanup(&stripped));
         }
         #[cfg(feature = "llm-llama")]
         {
@@ -465,13 +470,13 @@ impl Worker {
                 self.llm = Some(self.load_llm()?);
             }
             let words = self.dictionary_words();
-            let cleaned = self.llm.as_ref().unwrap().clean(raw, &words)?;
+            let cleaned = self.llm.as_ref().unwrap().clean(&stripped, &words)?;
             if cleaned.is_empty() {
-                return Ok(cleanup::rule_based_cleanup(raw));
+                return Ok(cleanup::rule_based_cleanup(&stripped));
             }
             Ok(cleaned)
         }
         #[cfg(not(feature = "llm-llama"))]
-        Ok(cleanup::rule_based_cleanup(raw))
+        Ok(cleanup::rule_based_cleanup(&stripped))
     }
 }
