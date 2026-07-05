@@ -52,3 +52,7 @@ accessibility-sys = "0.1"
 [dev-dependencies]
 tempfile = "3"
 hound = "3"
+
+[[example]]
+name = "dictate_file"
+required-features = ["asr-whisper", "llm-llama"]
