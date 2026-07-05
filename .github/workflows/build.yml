@@ -1,5 +1,8 @@
 name: build
 
+permissions:
+  contents: write # attach installers to Releases on tag pushes
+
 on:
   push:
     branches: [main]
