@@ -36,9 +36,9 @@ jobs:
         include:
           - os: windows-latest # x64 NSIS + MSI
             args: ""
-          - os: macos-latest # Apple Silicon (arm64) DMG
-            args: ""
-          - os: macos-13 # Intel (x86_64) DMG
+          # Apple Silicon (arm64) DMG with Metal. Intel Macs: build from
+          # source — GitHub retired macos-13 Intel runners.
+          - os: macos-latest
             args: ""
     runs-on: ${{ matrix.os }}
     steps:

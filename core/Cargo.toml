@@ -48,6 +48,9 @@ windows = { version = "0.61", features = [
 core-foundation = "0.10"
 core-graphics = "0.24"
 accessibility-sys = "0.1"
+# GPU acceleration on Apple Silicon: same optional deps, +metal.
+whisper-rs = { version = "0.14", optional = true, features = ["metal"] }
+llama-cpp-2 = { version = "0.1.122", optional = true, features = ["metal"] }
 
 [dev-dependencies]
 tempfile = "3"
