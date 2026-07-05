@@ -34,16 +34,16 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: windows-latest
+          - os: windows-latest # x64 NSIS + MSI
             args: ""
-          - os: macos-latest # arm64 + x86_64 universal
-            args: "--target universal-apple-darwin"
+          - os: macos-latest # Apple Silicon (arm64) DMG
+            args: ""
+          - os: macos-13 # Intel (x86_64) DMG
+            args: ""
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.os == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
       - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
