@@ -58,6 +58,9 @@ enum Cmd {
     ReloadSettings(Settings),
     /// Drop warm model contexts (low-memory idle unload).
     UnloadModels,
+    /// Next dictation delivers text via the Done event only (no injection).
+    /// One-shot: resets after the dictation completes.
+    SetCaptureOnly(bool),
     CleanText { raw: String, reply: Sender<Result<String>> },
     Shutdown,
 }
@@ -102,6 +105,10 @@ impl PipelineHandle {
         let _ = self.tx.send(Cmd::UnloadModels);
     }
 
+    pub fn set_capture_only(&self, on: bool) {
+        let _ = self.tx.send(Cmd::SetCaptureOnly(on));
+    }
+
     /// Synchronous transcribe+clean of raw samples (scratchpad mode).
     pub fn process_to_text(&self, samples: Vec<f32>) -> Result<(String, String)> {
         let (rtx, rrx) = unbounded();
@@ -131,6 +138,7 @@ struct Worker {
     recording_flag: Arc<Mutex<bool>>,
     recorder: Option<Recorder>,
     record_started: Option<Instant>,
+    capture_only: bool,
     #[cfg(feature = "asr-whisper")]
     asr: Option<crate::asr::Transcriber>,
     #[cfg(feature = "llm-llama")]
@@ -150,6 +158,7 @@ impl Worker {
             recording_flag,
             recorder: None,
             record_started: None,
+            capture_only: false,
             #[cfg(feature = "asr-whisper")]
             asr: None,
             #[cfg(feature = "llm-llama")]
@@ -224,6 +233,7 @@ impl Worker {
                     self.settings = s;
                 }
                 Cmd::UnloadModels => self.do_unload(),
+                Cmd::SetCaptureOnly(on) => self.capture_only = on,
                 Cmd::Shutdown => break,
             }
         }
@@ -321,11 +331,16 @@ impl Worker {
 
         let t = Instant::now();
         let app_name = inject::frontmost_app_name();
-        let outcome = match inject::inject_text(&final_text, self.settings.output_mode) {
-            Ok(o) => o,
-            Err(e) => {
-                self.emit(PipelineEvent::Error { message: format!("inject: {e:#}") });
-                return;
+        let outcome = if self.capture_only {
+            self.capture_only = false; // one-shot
+            InjectOutcome::Captured
+        } else {
+            match inject::inject_text(&final_text, self.settings.output_mode) {
+                Ok(o) => o,
+                Err(e) => {
+                    self.emit(PipelineEvent::Error { message: format!("inject: {e:#}") });
+                    return;
+                }
             }
         };
         timings.inject_ms = t.elapsed().as_millis() as u64;

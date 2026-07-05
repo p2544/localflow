@@ -24,6 +24,9 @@ pub enum InjectOutcome {
     ClipboardOnly,
     /// Focused control is a password field; nothing was written anywhere.
     RefusedSecureField,
+    /// Capture-only dictation (scratchpad/test): text delivered via event,
+    /// nothing injected.
+    Captured,
 }
 
 pub fn inject_text(text: &str, mode: OutputMode) -> Result<InjectOutcome> {

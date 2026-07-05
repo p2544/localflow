@@ -38,7 +38,9 @@ export default function Pill() {
               ? "Password field — skipped"
               : ev.outcome === "clipboard_only"
                 ? "Copied — press Ctrl+V"
-                : `${ev.timings.total_ms} ms`
+                : ev.outcome === "captured"
+                  ? "✓ Captured"
+                  : `${ev.timings.total_ms} ms`
           );
           break;
         case "empty":

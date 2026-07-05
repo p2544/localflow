@@ -13,7 +13,7 @@ crate-type = ["staticlib", "cdylib", "rlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-localflow-core = { path = "../core" }
+localflow-core = { path = "../core", default-features = false }
 anyhow.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -21,10 +21,13 @@ tracing.workspace = true
 tracing-subscriber.workspace = true
 parking_lot.workspace = true
 
-tauri = { version = "2", features = ["tray-icon", "image-png"] }
+tauri = { version = "2", features = ["tray-icon", "image-png", "macos-private-api"] }
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-opener = "2"
 
 [features]
-default = []
+default = ["engines"]
+# The C++ inference engines (whisper.cpp + llama.cpp). Disable for fast
+# shell-only compile checks: cargo check -p localflow --no-default-features
+engines = ["localflow-core/asr-whisper", "localflow-core/llm-llama"]

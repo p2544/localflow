@@ -155,9 +155,14 @@ pub fn dictionary_remove(word: String) -> CmdResult<Vec<String>> {
     Dictionary::all(&conn).map_err(err)
 }
 
-/// UI button path (scratchpad / test dictation) — same pipeline as hotkey.
+/// UI button path (scratchpad / test dictation) — same pipeline as the
+/// hotkey, but capture-only: the text arrives via the Done event instead of
+/// being injected (the app's own window is focused, injecting would double).
 #[tauri::command]
-pub fn start_dictation(state: State<AppState>) {
+pub fn start_dictation(state: State<AppState>, capture_only: Option<bool>) {
+    state
+        .pipeline
+        .set_capture_only(capture_only.unwrap_or(true));
     state.pipeline.start_recording();
 }
 

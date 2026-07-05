@@ -67,7 +67,7 @@ export type PipelineEvent =
       type: "done";
       raw_text: string;
       final_text: string;
-      outcome: "injected" | "clipboard_only" | "refused_secure_field";
+      outcome: "injected" | "clipboard_only" | "refused_secure_field" | "captured";
       timings: StageTimings;
       history_id: number | null;
     }
@@ -98,7 +98,8 @@ export const api = {
   dictionaryList: () => invoke<string[]>("dictionary_list"),
   dictionaryAdd: (word: string) => invoke<string[]>("dictionary_add", { word }),
   dictionaryRemove: (word: string) => invoke<string[]>("dictionary_remove", { word }),
-  startDictation: () => invoke<void>("start_dictation"),
+  startDictation: (captureOnly = true) =>
+    invoke<void>("start_dictation", { captureOnly }),
   stopDictation: (discard = false) => invoke<void>("stop_dictation", { discard }),
   cleanTextPreview: (raw: string) => invoke<string>("clean_text_preview", { raw }),
   openSettingsPane: (pane: string) => invoke<void>("open_settings_pane", { pane }),
