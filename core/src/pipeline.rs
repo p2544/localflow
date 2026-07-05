@@ -163,6 +163,9 @@ impl Worker {
     }
 
     fn run(mut self, rx: Receiver<Cmd>) {
+        // Preload models at startup when they're already on disk so the very
+        // first dictation is warm (low-memory mode can unload them later).
+        self.ensure_models_quietly();
         loop {
             // Poll with timeout while recording (to stream level events) and
             // to service the low-memory idle unload.

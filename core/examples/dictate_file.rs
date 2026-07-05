@@ -72,7 +72,11 @@ fn main() -> anyhow::Result<()> {
         println!("LLM load: {:?}", t.elapsed());
         let t = Instant::now();
         let cleaned = llm.clean(&raw, &[])?;
-        println!("LLM ({:?}): {cleaned}", t.elapsed());
+        println!("LLM cold ({:?}): {cleaned}", t.elapsed());
+        // Second call exercises the KV-cache prefix reuse (steady-state cost).
+        let t = Instant::now();
+        let cleaned2 = llm.clean("um so let's meet at five pm no wait six pm", &[])?;
+        println!("LLM warm ({:?}): {cleaned2}", t.elapsed());
     } else {
         println!(
             "LLM skipped (no model at {}), rules: {}",
