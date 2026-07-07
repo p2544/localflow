@@ -179,6 +179,14 @@ pub fn clean_text_preview(state: State<AppState>, raw: String) -> CmdResult<Stri
     state.pipeline.clean_text(raw).map_err(err)
 }
 
+/// macOS: shows the system Accessibility-trust prompt so LocalFlow appears
+/// in the Privacy & Security list; returns whether trust is granted.
+/// Always true on other platforms.
+#[tauri::command]
+pub fn request_accessibility() -> bool {
+    localflow_core::inject::request_accessibility_trust()
+}
+
 /// Deep-links the OS settings pane the user must grant (macOS only today).
 #[tauri::command]
 pub fn open_settings_pane(pane: String) -> CmdResult<()> {

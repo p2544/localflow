@@ -60,10 +60,21 @@ pub fn run() {
             commands::stop_dictation,
             commands::clean_text_preview,
             commands::open_settings_pane,
+            commands::request_accessibility,
         ])
         .setup(|app| {
             tray::setup_tray(app.handle())?;
             hotkey::register_from_settings(app.handle())?;
+
+            // macOS: surface the Accessibility-trust prompt at startup so the
+            // app shows up in Privacy & Security → Accessibility. Without
+            // this, text injection is a silent no-op and the user has no way
+            // to even find the app in the permission list.
+            #[cfg(target_os = "macos")]
+            {
+                let trusted = localflow_core::inject::request_accessibility_trust();
+                tracing::info!("accessibility trusted: {trusted}");
+            }
 
             // Forward pipeline events to the webviews and drive the pill window.
             let handle = app.handle().clone();

@@ -25,24 +25,14 @@ pub struct ModelSpec {
 /// upstream repos don't publish stable hashes (verified by size instead).
 pub const CATALOG: &[ModelSpec] = &[
     ModelSpec {
-        id: "whisper-base",
+        id: "pathumma-th-large-v3",
         kind: "asr",
-        file_name: "ggml-base.bin",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-base.bin",
-        sha256: "60ed5bc3dd14eea856493d334349b405782ddcaf0028d4b5df4088345fba2efe",
-        size_bytes: 147_951_465,
-        label: "Whisper Base (fast, 142 MB)",
-        note: "Good accuracy for clear speech; weakest on Thai.",
-    },
-    ModelSpec {
-        id: "whisper-small",
-        kind: "asr",
-        file_name: "ggml-small.bin",
-        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-small.bin",
-        sha256: "1be3a9b2063867b937e64e2ec7483364a79917e157fa98c5d94b5c1fffea987b",
-        size_bytes: 487_601_967,
-        label: "Whisper Small (balanced, 466 MB)",
-        note: "Recommended minimum for Thai.",
+        file_name: "ggml-pathumma-th-large-v3-q5_0.bin",
+        url: "https://github.com/p2544/localflow/releases/download/models-thai-v1/ggml-pathumma-th-large-v3-q5_0.bin",
+        sha256: "adbc51a20eb4fffc1d691613379b44e8194264468dced7efc1ccc80e119ee49b",
+        size_bytes: 1_081_140_203,
+        label: "Pathumma Thai Large-v3 Q5 (~1.1 GB)",
+        note: "ดีที่สุดสำหรับภาษาไทย — NECTEC fine-tune (Apache-2.0). Thai-specialized.",
     },
     ModelSpec {
         id: "whisper-large-v3-turbo",
@@ -51,8 +41,18 @@ pub const CATALOG: &[ModelSpec] = &[
         url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo-q5_0.bin",
         sha256: "394221709cd5ad1f40c46e6031ca61bce88931e6e088c188294c6d5a55ffa7e2",
         size_bytes: 574_041_195,
-        label: "Whisper Large v3 Turbo Q5 (best, 547 MB)",
-        note: "Best accuracy incl. Thai; needs a decent CPU/GPU.",
+        label: "Whisper Large-v3 Turbo Q5 (fast, 547 MB)",
+        note: "Recommended default — fast, strong across 100 languages.",
+    },
+    ModelSpec {
+        id: "whisper-large-v3",
+        kind: "asr",
+        file_name: "ggml-large-v3-q5_0.bin",
+        url: "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-q5_0.bin",
+        sha256: "d75795ecff3f83b5faa89d1900604ad8c780abd5739fae406de19f23ecd98ad1",
+        size_bytes: 1_081_140_203,
+        label: "Whisper Large-v3 Q5 (~1.1 GB)",
+        note: "Highest-accuracy vanilla Whisper; slower than Turbo.",
     },
     ModelSpec {
         id: "qwen2.5-3b-instruct",
@@ -210,8 +210,9 @@ mod tests {
 
     #[test]
     fn catalog_lookup() {
-        assert!(spec_by_id("whisper-base").is_some());
-        assert!(spec_by_file("ggml-base.bin").is_some());
+        assert!(spec_by_id("whisper-large-v3-turbo").is_some());
+        assert!(spec_by_id("pathumma-th-large-v3").is_some());
+        assert!(spec_by_file("ggml-large-v3-turbo-q5_0.bin").is_some());
         assert!(spec_by_id("nope").is_none());
     }
 

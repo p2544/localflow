@@ -39,6 +39,13 @@ pub fn inject_text(text: &str, mode: OutputMode) -> Result<InjectOutcome> {
     platform::inject(text, mode)
 }
 
+/// macOS: asks the OS to show the Accessibility-trust prompt (which also
+/// makes the app appear in the Privacy & Security list). No-op elsewhere.
+/// Returns whether the process is currently trusted.
+pub fn request_accessibility_trust() -> bool {
+    platform::request_accessibility_trust()
+}
+
 /// Name of the frontmost application (for history/app-context), best-effort.
 pub fn frontmost_app_name() -> String {
     platform::frontmost_app_name()
@@ -75,6 +82,13 @@ mod platform {
     const KEY_V: u16 = 9; // kVK_ANSI_V
 
     pub fn inject(text: &str, _mode: OutputMode) -> Result<InjectOutcome> {
+        // Without Accessibility trust both the AX insert and the synthetic
+        // ⌘V silently do nothing — surface that instead of "succeeding".
+        if !unsafe { accessibility_sys::AXIsProcessTrusted() } {
+            return Err(anyhow::anyhow!(
+                "Accessibility permission not granted — System Settings → Privacy & Security → Accessibility → enable LocalFlow, then restart the app"
+            ));
+        }
         // AX insert first: no clipboard disturbance, works in most Cocoa apps.
         if ax::insert_via_ax(text) {
             return Ok(InjectOutcome::Injected);
@@ -103,6 +117,24 @@ mod platform {
 
     pub fn frontmost_app_name() -> String {
         ax::frontmost_app_name().unwrap_or_default()
+    }
+
+    /// Shows the system Accessibility-trust prompt (adds the app to the
+    /// Privacy & Security → Accessibility list) and reports trust state.
+    pub fn request_accessibility_trust() -> bool {
+        use accessibility_sys::{kAXTrustedCheckOptionPrompt, AXIsProcessTrustedWithOptions};
+        use core_foundation::base::TCFType;
+        use core_foundation::boolean::CFBoolean;
+        use core_foundation::dictionary::CFDictionary;
+        use core_foundation::string::CFString;
+        unsafe {
+            let key = CFString::wrap_under_get_rule(kAXTrustedCheckOptionPrompt);
+            let opts = CFDictionary::from_CFType_pairs(&[(
+                key.as_CFType(),
+                CFBoolean::true_value().as_CFType(),
+            )]);
+            AXIsProcessTrustedWithOptions(opts.as_concrete_TypeRef())
+        }
     }
 
     mod ax {
@@ -259,6 +291,10 @@ mod platform {
         Ok(())
     }
 
+    pub fn request_accessibility_trust() -> bool {
+        true // Windows needs no accessibility trust for SendInput
+    }
+
     /// Best-effort: UI Automation focused element IsPassword property.
     pub fn is_secure_field_focused() -> bool {
         unsafe {
@@ -306,5 +342,9 @@ mod platform {
 
     pub fn frontmost_app_name() -> String {
         String::new()
+    }
+
+    pub fn request_accessibility_trust() -> bool {
+        true
     }
 }
