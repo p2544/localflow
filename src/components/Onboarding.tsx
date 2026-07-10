@@ -47,6 +47,7 @@ function Welcome({ onNext }: { onNext: () => void }) {
 }
 
 function Permissions({ onNext }: { onNext: () => void }) {
+  const [axTrusted, setAxTrusted] = useState<boolean | null>(null);
   return (
     <div className="card">
       <h1>Permissions</h1>
@@ -59,9 +60,21 @@ function Permissions({ onNext }: { onNext: () => void }) {
           <p>
             <span className="step-num">2</span>
             <b>Accessibility</b> — lets LocalFlow insert text into other apps.{" "}
-            <button className="btn secondary small" onClick={() => api.openSettingsPane("accessibility")}>
-              Open System Settings
-            </button>
+            <button
+              className="btn small"
+              onClick={async () => setAxTrusted(await api.requestAccessibility())}
+            >
+              Request permission
+            </button>{" "}
+            {axTrusted === true && <span style={{ color: "#4ade80" }}>✓ granted</span>}
+            {axTrusted === false && (
+              <span className="hint">
+                Prompt shown — enable LocalFlow in the pane, then restart the app.{" "}
+                <button className="btn secondary small" onClick={() => api.openSettingsPane("accessibility")}>
+                  Open System Settings
+                </button>
+              </span>
+            )}
           </p>
           <p>
             <span className="step-num">3</span>
@@ -117,10 +130,12 @@ function Models({
     };
   }, []);
 
-  // Recommended pair for first run.
-  const asr = catalog.find((m) => m.id === "whisper-small");
+  // Recommended set for first run: fast multilingual + Thai-specialized.
+  const asr = catalog.find((m) => m.id === "whisper-large-v3-turbo");
+  const asrThai = catalog.find((m) => m.id === "pathumma-th-large-v3");
   const llm = catalog.find((m) => m.id === "qwen2.5-3b-instruct");
-  const asrDone = asr && installed.has(asr.id);
+  const asrDone =
+    (asr && installed.has(asr.id)) || (asrThai && installed.has(asrThai.id));
   const llmDone = llm && installed.has(llm.id);
 
   const grab = async (m: ModelSpec) => {
@@ -166,7 +181,8 @@ function Models({
       <p className="empty-note">
         Both run entirely on-device. You can switch sizes later in Settings → Models.
       </p>
-      {row(asr, asrDone)}
+      {row(asr, asr && installed.has(asr.id))}
+      {row(asrThai, asrThai && installed.has(asrThai.id))}
       {row(llm, llmDone)}
       {error && <p style={{ color: "#f87171" }}>{error}</p>}
       <div style={{ marginTop: 14, display: "flex", gap: 8 }}>

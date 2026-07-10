@@ -103,6 +103,7 @@ export const api = {
   stopDictation: (discard = false) => invoke<void>("stop_dictation", { discard }),
   cleanTextPreview: (raw: string) => invoke<string>("clean_text_preview", { raw }),
   openSettingsPane: (pane: string) => invoke<void>("open_settings_pane", { pane }),
+  requestAccessibility: () => invoke<boolean>("request_accessibility"),
 };
 
 export function onPipelineEvent(cb: (ev: PipelineEvent) => void): Promise<UnlistenFn> {

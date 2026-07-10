@@ -56,7 +56,7 @@ impl Default for Settings {
             hotkey: "CommandOrControl+Shift+Space".into(),
             hotkey_mode: HotkeyMode::PushToTalk,
             language: "en".into(),
-            asr_model: "ggml-base.bin".into(),
+            asr_model: "ggml-large-v3-turbo-q5_0.bin".into(),
             llm_model: "qwen2.5-3b-instruct-q4_k_m.gguf".into(),
             cleanup_enabled: true,
             output_mode: OutputMode::Paste,
