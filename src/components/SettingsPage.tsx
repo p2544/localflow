@@ -94,6 +94,73 @@ export default function SettingsPage({
         </div>
       </div>
 
+      <h2>Speech-to-text</h2>
+      <div className="card">
+        <div className="row">
+          <label>
+            Engine
+            <span className="hint">
+              Local runs fully offline. A cloud provider sends your dictation audio to that
+              provider's servers — only enable it if you've accepted that trade-off.
+            </span>
+          </label>
+          <select
+            value={settings.stt_provider}
+            onChange={(e) => set("stt_provider", e.target.value as Settings["stt_provider"])}
+          >
+            <option value="local">Local (whisper.cpp, offline)</option>
+            <option value="open_ai">OpenAI (cloud)</option>
+            <option value="google">Google Cloud (cloud)</option>
+          </select>
+        </div>
+        {settings.stt_provider === "open_ai" && (
+          <>
+            <div className="row">
+              <label>
+                OpenAI API key
+                <span className="hint">
+                  Stored locally in settings.json. Get one at platform.openai.com/api-keys.
+                </span>
+              </label>
+              <input
+                type="password"
+                value={settings.openai_api_key}
+                onChange={(e) => set("openai_api_key", e.target.value)}
+                placeholder="sk-..."
+              />
+            </div>
+            <div className="row">
+              <label>Model</label>
+              <select
+                value={settings.openai_stt_model}
+                onChange={(e) => set("openai_stt_model", e.target.value)}
+              >
+                <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe (cheap, fast)</option>
+                <option value="gpt-4o-transcribe">gpt-4o-transcribe (higher accuracy)</option>
+                <option value="whisper-1">whisper-1</option>
+              </select>
+            </div>
+          </>
+        )}
+        {settings.stt_provider === "google" && (
+          <div className="row">
+            <label>
+              Google Cloud API key
+              <span className="hint">
+                Stored locally in settings.json. Enable the Speech-to-Text API on a Google Cloud
+                project and create an API key.
+              </span>
+            </label>
+            <input
+              type="password"
+              value={settings.google_api_key}
+              onChange={(e) => set("google_api_key", e.target.value)}
+              placeholder="AIza..."
+            />
+          </div>
+        )}
+      </div>
+
       <h2>Output</h2>
       <div className="card">
         <div className="row">

@@ -48,6 +48,21 @@ LOCALFLOW_LLM_MODEL=~/.local/share/LocalFlow/models/qwen2.5-3b-instruct-q4_k_m.g
   cargo test -p localflow-core --test cleanup_suite -- --ignored --nocapture
 ```
 
+## Cloud STT (optional, off by default)
+
+LocalFlow is local-first by default — whisper.cpp does the transcribing and nothing leaves
+the machine except the model download. If you'd rather trade that privacy for cloud-grade
+accuracy or skip the model download, Settings → Speech-to-text lets you switch the
+transcription engine to:
+
+- **OpenAI** — `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`, or `whisper-1`, via your own API key
+- **Google Cloud** — Speech-to-Text `v1/speech:recognize` (sync), via your own API key
+
+Enabling either sends the raw dictation audio for that recording to the selected provider's
+servers. The API key is stored in plaintext in `settings.json` under the app data dir —
+treat it like any other local secret. LLM cleanup, history, and injection are unaffected and
+still run locally regardless of which STT engine is selected.
+
 ## Models
 
 Downloaded on demand from Hugging Face into the app data dir, sha256/size verified, resumable:

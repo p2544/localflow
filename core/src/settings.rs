@@ -23,6 +23,18 @@ pub enum HotkeyMode {
     Toggle,
 }
 
+/// Which engine transcribes audio. Cloud providers are opt-in: choosing one
+/// sends dictation audio to that provider's servers (see Settings UI copy).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SttProvider {
+    /// whisper.cpp, fully offline. The default and the privacy-preserving choice.
+    #[default]
+    Local,
+    OpenAi,
+    Google,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Settings {
@@ -35,6 +47,17 @@ pub struct Settings {
     pub asr_model: String,
     /// LLM GGUF file name inside the models dir; empty disables cleanup.
     pub llm_model: String,
+    /// Transcription engine: local whisper.cpp (default) or an opt-in cloud provider.
+    pub stt_provider: SttProvider,
+    /// User-supplied OpenAI API key; stored locally, used only when
+    /// `stt_provider == OpenAi`. Never sent anywhere but api.openai.com.
+    pub openai_api_key: String,
+    /// OpenAI transcription model id, e.g. "gpt-4o-mini-transcribe",
+    /// "gpt-4o-transcribe", "whisper-1".
+    pub openai_stt_model: String,
+    /// User-supplied Google Cloud Speech-to-Text API key; used only when
+    /// `stt_provider == Google`.
+    pub google_api_key: String,
     /// Master switch for the LLM cleanup pass (raw-transcript mode when false).
     pub cleanup_enabled: bool,
     pub output_mode: OutputMode,
@@ -58,6 +81,10 @@ impl Default for Settings {
             language: "en".into(),
             asr_model: "ggml-large-v3-turbo-q5_0.bin".into(),
             llm_model: "qwen2.5-3b-instruct-q4_k_m.gguf".into(),
+            stt_provider: SttProvider::Local,
+            openai_api_key: String::new(),
+            openai_stt_model: "gpt-4o-mini-transcribe".into(),
+            google_api_key: String::new(),
             cleanup_enabled: true,
             output_mode: OutputMode::Paste,
             mic_device: String::new(),
@@ -136,5 +163,16 @@ mod tests {
         let s: Settings = serde_json::from_str(raw).unwrap();
         assert_eq!(s.hotkey, "F9");
         assert!(s.cleanup_enabled);
+        assert_eq!(s.stt_provider, SttProvider::Local);
+    }
+
+    #[test]
+    fn stt_provider_roundtrips_and_matches_frontend_naming() {
+        let mut s = Settings::default();
+        s.stt_provider = SttProvider::OpenAi;
+        let json = serde_json::to_string(&s).unwrap();
+        assert!(json.contains(r#""stt_provider":"open_ai""#));
+        let back: Settings = serde_json::from_str(&json).unwrap();
+        assert_eq!(back.stt_provider, SttProvider::OpenAi);
     }
 }
