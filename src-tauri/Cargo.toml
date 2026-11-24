@@ -30,4 +30,4 @@ tauri-plugin-opener = "2"
 default = ["engines"]
 # The C++ inference engines (whisper.cpp + llama.cpp). Disable for fast
 # shell-only compile checks: cargo check -p localflow --no-default-features
-engines = ["localflow-core/asr-whisper", "localflow-core/llm-llama"]
+engines = ["localflow-core/asr-whisper", "localflow-core/llm-llama", "localflow-core/asr-openthai"]

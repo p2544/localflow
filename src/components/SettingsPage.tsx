@@ -109,10 +109,23 @@ export default function SettingsPage({
             onChange={(e) => set("stt_provider", e.target.value as Settings["stt_provider"])}
           >
             <option value="local">Local (whisper.cpp, offline)</option>
+            <option value="open_thai">OpenThai2.0 Streaming (Thai, offline)</option>
             <option value="open_ai">OpenAI (cloud)</option>
             <option value="google">Google Cloud (cloud)</option>
           </select>
         </div>
+        {settings.stt_provider === "open_thai" && (
+          <div className="row">
+            <label>
+              OpenThai2.0
+              <span className="hint">
+                Thai-specialized streaming ASR (NVIDIA Nemotron, by OpenThaiGPT/iApp), fully
+                offline — a separate engine from Whisper. Needs its own ~685 MB model,
+                downloaded from the Models page before this works.
+              </span>
+            </label>
+          </div>
+        )}
         {settings.stt_provider === "open_ai" && (
           <>
             <div className="row">

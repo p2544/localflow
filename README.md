@@ -48,20 +48,26 @@ LOCALFLOW_LLM_MODEL=~/.local/share/LocalFlow/models/qwen2.5-3b-instruct-q4_k_m.g
   cargo test -p localflow-core --test cleanup_suite -- --ignored --nocapture
 ```
 
-## Cloud STT (optional, off by default)
+## Alternative STT engines (optional, off by default)
 
 LocalFlow is local-first by default — whisper.cpp does the transcribing and nothing leaves
-the machine except the model download. If you'd rather trade that privacy for cloud-grade
-accuracy or skip the model download, Settings → Speech-to-text lets you switch the
+the machine except the model download. Settings → Speech-to-text lets you switch the
 transcription engine to:
 
-- **OpenAI** — `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`, or `whisper-1`, via your own API key
-- **Google Cloud** — Speech-to-Text `v1/speech:recognize` (sync), via your own API key
+- **OpenThai2.0 ASR Streaming** — a Thai-specialized streaming transducer (NVIDIA Nemotron
+  family, by OpenThaiGPT/iApp, OpenMDW-1.1 license) run locally via
+  [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx). Still fully offline, but a different
+  engine from whisper.cpp — needs its own ~685 MB model (encoder/decoder/joiner + tokens),
+  downloaded from the Models page. LocalFlow doesn't do live partial-text display, so it's
+  used the same way as whisper: record, release, get the final transcript.
+- **OpenAI** (cloud) — `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`, or `whisper-1`, via your
+  own API key
+- **Google Cloud** (cloud) — Speech-to-Text `v1/speech:recognize` (sync), via your own API key
 
-Enabling either sends the raw dictation audio for that recording to the selected provider's
-servers. The API key is stored in plaintext in `settings.json` under the app data dir —
-treat it like any other local secret. LLM cleanup, history, and injection are unaffected and
-still run locally regardless of which STT engine is selected.
+Enabling either cloud provider sends the raw dictation audio for that recording to the
+selected provider's servers. The API key is stored in plaintext in `settings.json` under the
+app data dir — treat it like any other local secret. LLM cleanup, history, and injection are
+unaffected and still run locally regardless of which STT engine is selected.
 
 ## Models
 
