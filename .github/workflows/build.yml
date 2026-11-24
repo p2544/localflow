@@ -41,8 +41,10 @@ jobs:
             args: ""
           # Apple Silicon (arm64) DMG with Metal. Intel Macs: build from
           # source — GitHub retired macos-13 Intel runners.
+          # asr-openthai (sherpa-onnx) disabled here: its prebuilt "shared"
+          # libs don't link cleanly on this runner yet. Windows keeps it.
           - os: macos-latest
-            args: ""
+            args: "--no-default-features --features engines"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -54,6 +56,12 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install cmake || true
       - run: npm ci
+      - name: Pre-build Rust (Windows only)
+        if: runner.os == 'Windows'
+        # Ensures sherpa-onnx's shared DLLs land in target/release before
+        # tauri-build's own build script checks bundle.resources paths exist
+        # — on a fresh CI checkout those two can otherwise race.
+        run: cargo build --release -p localflow
       - name: Build bundles
         run: npm run tauri build -- ${{ matrix.args }}
       - uses: actions/upload-artifact@v4
