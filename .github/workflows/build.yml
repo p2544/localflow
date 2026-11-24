@@ -49,23 +49,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      # No Swatinem/rust-cache here (unlike the `test` job): sherpa-onnx-sys's
+      # build script copies its downloaded DLLs straight into target/release
+      # as a side effect of running — a restored cache can leave cargo's
+      # fingerprint for that build script "unchanged" and skip re-running it,
+      # silently dropping those DLLs even though cargo thinks the crate is
+      # already built. A clean build avoids that entirely.
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - name: CMake (macOS)
         if: runner.os == 'macOS'
         run: brew install cmake || true
       - run: npm ci
-      - name: Pre-build Rust (Windows only)
-        if: runner.os == 'Windows'
-        # On a fresh checkout this first build always fails: tauri-build's
-        # own build script checks bundle.resources paths before sherpa-onnx-sys
-        # (a dependency, built earlier in the same invocation) has copied its
-        # shared DLLs into target/release. That copy still happens despite the
-        # failure, so the real `tauri build` step right after this one finds
-        # the DLLs already in place and succeeds.
-        continue-on-error: true
-        run: cargo build --release -p localflow
       - name: Build bundles
         run: npm run tauri build -- ${{ matrix.args }}
       - uses: actions/upload-artifact@v4
