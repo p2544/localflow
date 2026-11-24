@@ -44,7 +44,7 @@ jobs:
           # asr-openthai (sherpa-onnx) disabled here: its prebuilt "shared"
           # libs don't link cleanly on this runner yet. Windows keeps it.
           - os: macos-latest
-            args: "--no-default-features --features engines"
+            args: "-- --no-default-features --features engines"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -58,9 +58,13 @@ jobs:
       - run: npm ci
       - name: Pre-build Rust (Windows only)
         if: runner.os == 'Windows'
-        # Ensures sherpa-onnx's shared DLLs land in target/release before
-        # tauri-build's own build script checks bundle.resources paths exist
-        # — on a fresh CI checkout those two can otherwise race.
+        # On a fresh checkout this first build always fails: tauri-build's
+        # own build script checks bundle.resources paths before sherpa-onnx-sys
+        # (a dependency, built earlier in the same invocation) has copied its
+        # shared DLLs into target/release. That copy still happens despite the
+        # failure, so the real `tauri build` step right after this one finds
+        # the DLLs already in place and succeeds.
+        continue-on-error: true
         run: cargo build --release -p localflow
       - name: Build bundles
         run: npm run tauri build -- ${{ matrix.args }}
