@@ -9,9 +9,18 @@ use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, Serialize)]
+pub struct ExtraFile {
+    pub file_name: &'static str,
+    pub url: &'static str,
+    /// Hex sha256; empty = skip verification (size check only).
+    pub sha256: &'static str,
+    pub size_bytes: u64,
+}
+
+#[derive(Debug, Clone, Serialize)]
 pub struct ModelSpec {
     pub id: &'static str,
-    pub kind: &'static str, // "asr" | "llm"
+    pub kind: &'static str, // "asr" | "llm" | "asr-openthai"
     pub file_name: &'static str,
     pub url: &'static str,
     /// Hex sha256; empty = skip verification (size check only).
@@ -19,6 +28,21 @@ pub struct ModelSpec {
     pub size_bytes: u64,
     pub label: &'static str,
     pub note: &'static str,
+    /// Extra files required alongside `file_name`, in the same models dir —
+    /// for a model shipped as several parts (e.g. a sherpa-onnx
+    /// encoder/decoder/joiner/tokens set) rather than one file.
+    pub extra_files: &'static [ExtraFile],
+}
+
+/// File names for the OpenThai2.0 ASR Streaming multi-file model. Kept here
+/// (not in the feature-gated `openthai_stt` module) so the catalog entry
+/// below compiles in `--no-default-features` builds too; `openthai_stt`
+/// imports these same consts rather than redefining them.
+pub mod openthai_files {
+    pub const ENCODER: &str = "openthai2.0-encoder.int8.onnx";
+    pub const DECODER: &str = "openthai2.0-decoder.int8.onnx";
+    pub const JOINER: &str = "openthai2.0-joiner.int8.onnx";
+    pub const TOKENS: &str = "openthai2.0-tokens.txt";
 }
 
 /// Curated catalog. Sizes are approximate for progress UI; hash empty where
@@ -33,6 +57,7 @@ pub const CATALOG: &[ModelSpec] = &[
         size_bytes: 1_081_140_203,
         label: "Pathumma Thai Large-v3 Q5 (~1.1 GB)",
         note: "ดีที่สุดสำหรับภาษาไทย — NECTEC fine-tune (Apache-2.0). Thai-specialized.",
+        extra_files: &[],
     },
     ModelSpec {
         id: "whisper-large-v3-turbo",
@@ -43,6 +68,7 @@ pub const CATALOG: &[ModelSpec] = &[
         size_bytes: 574_041_195,
         label: "Whisper Large-v3 Turbo Q5 (fast, 547 MB)",
         note: "Recommended default — fast, strong across 100 languages.",
+        extra_files: &[],
     },
     ModelSpec {
         id: "whisper-large-v3",
@@ -53,6 +79,37 @@ pub const CATALOG: &[ModelSpec] = &[
         size_bytes: 1_081_140_203,
         label: "Whisper Large-v3 Q5 (~1.1 GB)",
         note: "Highest-accuracy vanilla Whisper; slower than Turbo.",
+        extra_files: &[],
+    },
+    ModelSpec {
+        id: "openthai2.0-asr-streaming",
+        kind: "asr-openthai",
+        file_name: openthai_files::ENCODER,
+        url: "https://huggingface.co/ohmeet-com/openthai2.0-asr-streaming-sherpa-onnx-560ms-int8/resolve/main/encoder.int8.onnx",
+        sha256: "bd179e2f8cf293f96a49b17ccea26ab00618a76cf73f8b249276b5c7969beecd",
+        size_bytes: 657_573_653,
+        label: "OpenThai2.0 ASR Streaming (Thai, ~685 MB)",
+        note: "เครื่องยนต์แยก ไม่ใช่ Whisper — NVIDIA Nemotron-based streaming Thai ASR โดย OpenThaiGPT/iApp (OpenMDW-1.1, ใช้ธุรกิจได้). เลือกที่ Settings → Speech-to-text → OpenThai2.0.",
+        extra_files: &[
+            ExtraFile {
+                file_name: openthai_files::DECODER,
+                url: "https://huggingface.co/ohmeet-com/openthai2.0-asr-streaming-sherpa-onnx-560ms-int8/resolve/main/decoder.int8.onnx",
+                sha256: "512bcd720ad4c9124b0d24b5cd682ac6c35d73035e1eb22c74264284aafab7db",
+                size_bytes: 16_194_714,
+            },
+            ExtraFile {
+                file_name: openthai_files::JOINER,
+                url: "https://huggingface.co/ohmeet-com/openthai2.0-asr-streaming-sherpa-onnx-560ms-int8/resolve/main/joiner.int8.onnx",
+                sha256: "faa6e6931fda9b507042712e31e9f40b46f70eac19a9312d478398a49b1461c8",
+                size_bytes: 10_728_684,
+            },
+            ExtraFile {
+                file_name: openthai_files::TOKENS,
+                url: "https://huggingface.co/ohmeet-com/openthai2.0-asr-streaming-sherpa-onnx-560ms-int8/resolve/main/tokens.txt",
+                sha256: "d3d95eb99751ddceb900666d74b734af599d0dea1c5b2dae082671326fb4c8b1",
+                size_bytes: 171_990,
+            },
+        ],
     },
     ModelSpec {
         id: "qwen2.5-3b-instruct",
@@ -63,6 +120,7 @@ pub const CATALOG: &[ModelSpec] = &[
         size_bytes: 2_100_000_000,
         label: "Qwen2.5 3B Instruct Q4 (cleanup LLM, ~2 GB)",
         note: "Default cleanup model; strong multilingual incl. Thai.",
+        extra_files: &[],
     },
     ModelSpec {
         id: "llama-3.2-3b-instruct",
@@ -73,6 +131,7 @@ pub const CATALOG: &[ModelSpec] = &[
         size_bytes: 2_020_000_000,
         label: "Llama 3.2 3B Instruct Q4 (~1.9 GB)",
         note: "Alternative cleanup model (same family Wispr fine-tunes).",
+        extra_files: &[],
     },
 ];
 
@@ -95,38 +154,97 @@ pub fn status(models_dir: &Path) -> Vec<ModelStatus> {
     CATALOG
         .iter()
         .map(|m| {
-            let p = models_dir.join(m.file_name);
-            let bytes = std::fs::metadata(&p).map(|md| md.len()).unwrap_or(0);
+            let mut bytes = file_len(models_dir, m.file_name);
+            let mut installed = bytes > 0;
+            for extra in m.extra_files {
+                let b = file_len(models_dir, extra.file_name);
+                installed = installed && b > 0;
+                bytes += b;
+            }
             ModelStatus {
                 id: m.id.to_string(),
-                // "installed" = full size present (partial files use .part).
-                installed: bytes > 0,
+                // "installed" = every part present (partial files use .part).
+                installed,
                 bytes_on_disk: bytes,
             }
         })
         .collect()
 }
 
-/// Blocking download with resume + progress callback (downloaded, total).
-/// Writes to `<file>.part`, verifies, then renames — a crash never leaves a
-/// half-file that looks installed.
+fn file_len(models_dir: &Path, file_name: &str) -> u64 {
+    std::fs::metadata(models_dir.join(file_name))
+        .map(|md| md.len())
+        .unwrap_or(0)
+}
+
+/// Blocking download with resume + progress callback (downloaded, total,
+/// summed across `spec.file_name` and every `extra_files` entry). Writes to
+/// `<file>.part`, verifies, then renames — a crash never leaves a half-file
+/// that looks installed.
 pub fn download(
     spec: &ModelSpec,
     models_dir: &Path,
     mut progress: impl FnMut(u64, u64),
     cancelled: &dyn Fn() -> bool,
 ) -> Result<PathBuf> {
-    let final_path = models_dir.join(spec.file_name);
+    let grand_total = spec.size_bytes + spec.extra_files.iter().map(|f| f.size_bytes).sum::<u64>();
+    let mut offset = 0u64;
+
+    let primary = download_one(
+        spec.url,
+        spec.file_name,
+        spec.sha256,
+        spec.size_bytes,
+        models_dir,
+        offset,
+        grand_total,
+        &mut progress,
+        cancelled,
+    )?;
+    offset += spec.size_bytes;
+
+    for extra in spec.extra_files {
+        download_one(
+            extra.url,
+            extra.file_name,
+            extra.sha256,
+            extra.size_bytes,
+            models_dir,
+            offset,
+            grand_total,
+            &mut progress,
+            cancelled,
+        )?;
+        offset += extra.size_bytes;
+    }
+
+    Ok(primary)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn download_one(
+    url: &str,
+    file_name: &str,
+    sha256: &str,
+    size_bytes: u64,
+    models_dir: &Path,
+    offset: u64,
+    grand_total: u64,
+    progress: &mut dyn FnMut(u64, u64),
+    cancelled: &dyn Fn() -> bool,
+) -> Result<PathBuf> {
+    let final_path = models_dir.join(file_name);
     if final_path.exists() {
+        progress(offset + size_bytes, grand_total);
         return Ok(final_path);
     }
-    let part_path = models_dir.join(format!("{}.part", spec.file_name));
+    let part_path = models_dir.join(format!("{file_name}.part"));
     let existing = std::fs::metadata(&part_path).map(|m| m.len()).unwrap_or(0);
 
     let client = reqwest::blocking::Client::builder()
         .timeout(std::time::Duration::from_secs(60))
         .build()?;
-    let mut req = client.get(spec.url);
+    let mut req = client.get(url);
     if existing > 0 {
         req = req.header(reqwest::header::RANGE, format!("bytes={existing}-"));
     }
@@ -136,11 +254,6 @@ pub fn download(
         return Err(anyhow!("download failed: HTTP {status}"));
     }
     let resuming = status == reqwest::StatusCode::PARTIAL_CONTENT;
-    let total = if resuming {
-        existing + resp.content_length().unwrap_or(0)
-    } else {
-        resp.content_length().unwrap_or(spec.size_bytes)
-    };
 
     let mut file = std::fs::OpenOptions::new()
         .create(true)
@@ -166,28 +279,28 @@ pub fn download(
         }
         file.write_all(&buf[..n])?;
         written += n as u64;
-        progress(written, total);
+        progress(offset + written, grand_total);
     }
     file.flush()?;
     drop(file);
 
-    verify(&part_path, spec)?;
+    verify(&part_path, sha256, size_bytes)?;
     std::fs::rename(&part_path, &final_path)?;
     Ok(final_path)
 }
 
-fn verify(path: &Path, spec: &ModelSpec) -> Result<()> {
+fn verify(path: &Path, sha256: &str, size_bytes: u64) -> Result<()> {
     let md = std::fs::metadata(path)?;
-    if !spec.sha256.is_empty() {
+    if !sha256.is_empty() {
         let mut hasher = Sha256::new();
         let mut f = std::fs::File::open(path)?;
         std::io::copy(&mut f, &mut hasher)?;
         let got = hex::encode(hasher.finalize());
-        if got != spec.sha256 {
+        if got != sha256 {
             std::fs::remove_file(path).ok();
-            return Err(anyhow!("sha256 mismatch: expected {}, got {got}", spec.sha256));
+            return Err(anyhow!("sha256 mismatch: expected {sha256}, got {got}"));
         }
-    } else if md.len() < spec.size_bytes / 2 {
+    } else if md.len() < size_bytes / 2 {
         std::fs::remove_file(path).ok();
         return Err(anyhow!("downloaded file suspiciously small ({} bytes)", md.len()));
     }
@@ -195,7 +308,12 @@ fn verify(path: &Path, spec: &ModelSpec) -> Result<()> {
 }
 
 pub fn delete_model(spec: &ModelSpec, models_dir: &Path) -> Result<()> {
-    for name in [spec.file_name.to_string(), format!("{}.part", spec.file_name)] {
+    let mut names = vec![spec.file_name.to_string(), format!("{}.part", spec.file_name)];
+    for extra in spec.extra_files {
+        names.push(extra.file_name.to_string());
+        names.push(format!("{}.part", extra.file_name));
+    }
+    for name in names {
         let p = models_dir.join(name);
         if p.exists() {
             std::fs::remove_file(p)?;
@@ -230,7 +348,15 @@ mod tests {
         let spec = spec_by_id("qwen2.5-3b-instruct").unwrap();
         let p = dir.path().join("x.gguf");
         std::fs::write(&p, b"tiny").unwrap();
-        assert!(verify(&p, spec).is_err());
+        assert!(verify(&p, spec.sha256, spec.size_bytes).is_err());
         assert!(!p.exists(), "bad file removed");
+    }
+
+    #[test]
+    fn openthai_catalog_entry_has_extra_files() {
+        let spec = spec_by_id("openthai2.0-asr-streaming").unwrap();
+        assert_eq!(spec.kind, "asr-openthai");
+        assert_eq!(spec.extra_files.len(), 3);
+        assert!(spec_by_file(openthai_files::ENCODER).is_some());
     }
 }

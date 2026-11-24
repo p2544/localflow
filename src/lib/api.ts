@@ -4,6 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export type OutputMode = "paste" | "type";
 export type HotkeyMode = "push_to_talk" | "toggle";
+export type SttProvider = "local" | "open_ai" | "google" | "open_thai";
 
 export interface Settings {
   hotkey: string;
@@ -11,6 +12,10 @@ export interface Settings {
   language: string;
   asr_model: string;
   llm_model: string;
+  stt_provider: SttProvider;
+  openai_api_key: string;
+  openai_stt_model: string;
+  google_api_key: string;
   cleanup_enabled: boolean;
   output_mode: OutputMode;
   mic_device: string;
@@ -23,13 +28,14 @@ export interface Settings {
 
 export interface ModelSpec {
   id: string;
-  kind: "asr" | "llm";
+  kind: "asr" | "llm" | "asr-openthai";
   file_name: string;
   url: string;
   sha256: string;
   size_bytes: number;
   label: string;
   note: string;
+  extra_files: { file_name: string; url: string; sha256: string; size_bytes: number }[];
 }
 
 export interface ModelStatus {
