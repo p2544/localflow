@@ -143,8 +143,6 @@ struct Worker {
     asr: Option<crate::asr::Transcriber>,
     #[cfg(feature = "llm-llama")]
     llm: Option<crate::llm::CleanupLlm>,
-    #[cfg(feature = "asr-openthai")]
-    openthai: Option<crate::openthai_stt::OpenThaiAsr>,
     last_used: Instant,
 }
 
@@ -165,8 +163,6 @@ impl Worker {
             asr: None,
             #[cfg(feature = "llm-llama")]
             llm: None,
-            #[cfg(feature = "asr-openthai")]
-            openthai: None,
             last_used: Instant::now(),
         }
     }
@@ -251,10 +247,6 @@ impl Worker {
         #[cfg(feature = "llm-llama")]
         {
             self.llm = None;
-        }
-        #[cfg(feature = "asr-openthai")]
-        {
-            self.openthai = None;
         }
         tracing::info!("models unloaded (low-memory idle)");
     }
@@ -429,19 +421,6 @@ impl Worker {
                 Err(e) => tracing::warn!("LLM preload failed: {e:#}"),
             }
         }
-        #[cfg(feature = "asr-openthai")]
-        if self.openthai.is_none()
-            && self.settings.stt_provider == crate::settings::SttProvider::OpenThai
-        {
-            self.emit(PipelineEvent::ModelLoading { which: "asr".into() });
-            match self.load_openthai() {
-                Ok(o) => {
-                    self.openthai = Some(o);
-                    self.emit(PipelineEvent::ModelReady { which: "asr".into() });
-                }
-                Err(e) => tracing::warn!("OpenThai ASR preload failed: {e:#}"),
-            }
-        }
     }
 
     #[cfg(feature = "asr-whisper")]
@@ -468,12 +447,6 @@ impl Worker {
         crate::llm::CleanupLlm::load(&path, self.settings.effective_threads())
     }
 
-    #[cfg(feature = "asr-openthai")]
-    fn load_openthai(&self) -> Result<crate::openthai_stt::OpenThaiAsr> {
-        let dir = Settings::models_dir()?;
-        crate::openthai_stt::OpenThaiAsr::load(&dir, self.settings.effective_threads())
-    }
-
     fn transcribe(&mut self, samples: &[f32]) -> Result<String> {
         use crate::settings::SttProvider;
         match self.settings.stt_provider {
@@ -497,23 +470,7 @@ impl Worker {
                     &words,
                 )
             }
-            SttProvider::OpenThai => self.transcribe_openthai(samples),
             SttProvider::Local => self.transcribe_local(samples),
-        }
-    }
-
-    fn transcribe_openthai(&mut self, samples: &[f32]) -> Result<String> {
-        #[cfg(feature = "asr-openthai")]
-        {
-            if self.openthai.is_none() {
-                self.openthai = Some(self.load_openthai()?);
-            }
-            self.openthai.as_ref().unwrap().transcribe(samples)
-        }
-        #[cfg(not(feature = "asr-openthai"))]
-        {
-            let _ = samples;
-            Err(anyhow!("built without OpenThai ASR support"))
         }
     }
 

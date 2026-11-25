@@ -21,8 +21,6 @@ pub mod vad;
 pub mod asr;
 #[cfg(feature = "llm-llama")]
 pub mod llm;
-#[cfg(feature = "asr-openthai")]
-pub mod openthai_stt;
 
 pub use pipeline::{PipelineEvent, PipelineHandle, StageTimings};
 pub use settings::Settings;

@@ -25,10 +25,10 @@ export default function SettingsPage({
   onChange,
 }: {
   settings: Settings;
-  onChange: (s: Settings) => void;
+  onChange: (s: Settings) => void | Promise<void>;
 }) {
   const [mics, setMics] = useState<string[]>([]);
-  const [hotkeyDraft, setHotkeyDraft] = useState(settings.hotkey);
+  const [hotkeyError, setHotkeyError] = useState("");
 
   useEffect(() => {
     api.listMics().then(setMics);
@@ -45,17 +45,23 @@ export default function SettingsPage({
         <div className="row">
           <label>
             Hotkey
-            <span className="hint">
-              Tauri accelerator syntax, e.g. CommandOrControl+Shift+Space, F9
-            </span>
+            <span className="hint">Click Change, then press the key combo you want.</span>
           </label>
           <span>
-            <input
-              type="text"
-              value={hotkeyDraft}
-              onChange={(e) => setHotkeyDraft(e.target.value)}
-              onBlur={() => hotkeyDraft.trim() && set("hotkey", hotkeyDraft.trim())}
+            <HotkeyRecorder
+              value={settings.hotkey}
+              onCapture={(accel) => {
+                setHotkeyError("");
+                Promise.resolve(set("hotkey", accel)).catch((e: unknown) =>
+                  setHotkeyError(String(e))
+                );
+              }}
             />
+            {hotkeyError && (
+              <div className="hint" style={{ color: "#f87171" }}>
+                {hotkeyError}
+              </div>
+            )}
           </span>
         </div>
         <div className="row">
@@ -109,23 +115,10 @@ export default function SettingsPage({
             onChange={(e) => set("stt_provider", e.target.value as Settings["stt_provider"])}
           >
             <option value="local">Local (whisper.cpp, offline)</option>
-            <option value="open_thai">OpenThai2.0 Streaming (Thai, offline)</option>
             <option value="open_ai">OpenAI (cloud)</option>
             <option value="google">Google Cloud (cloud)</option>
           </select>
         </div>
-        {settings.stt_provider === "open_thai" && (
-          <div className="row">
-            <label>
-              OpenThai2.0
-              <span className="hint">
-                Thai-specialized streaming ASR (NVIDIA Nemotron, by OpenThaiGPT/iApp), fully
-                offline — a separate engine from Whisper. Needs its own ~685 MB model,
-                downloaded from the Models page before this works.
-              </span>
-            </label>
-          </div>
-        )}
         {settings.stt_provider === "open_ai" && (
           <>
             <div className="row">
@@ -280,5 +273,102 @@ function TestButtons() {
     >
       Start recording
     </button>
+  );
+}
+
+// Codes that are modifiers on their own — held while picking the real key,
+// never the final key themselves. Mapped to the token `global-hotkey`'s
+// accelerator parser expects (see src-tauri's tauri-plugin-global-shortcut).
+const MODIFIER_CODES: Record<string, string> = {
+  ControlLeft: "Control",
+  ControlRight: "Control",
+  ShiftLeft: "Shift",
+  ShiftRight: "Shift",
+  AltLeft: "Alt",
+  AltRight: "Alt",
+  MetaLeft: "Super",
+  MetaRight: "Super",
+};
+
+const IS_MAC = /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+
+// Lets the user press the combo they want instead of typing Tauri
+// accelerator syntax. `KeyboardEvent.code` matches that syntax's key names
+// almost verbatim (KeyA, Digit1, Space, F9, ArrowUp, ...), so capture only
+// has to translate the modifier flags.
+function HotkeyRecorder({
+  value,
+  onCapture,
+}: {
+  value: string;
+  onCapture: (accelerator: string) => void;
+}) {
+  const [recording, setRecording] = useState(false);
+  const [liveMods, setLiveMods] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!recording) return;
+    const held = new Set<string>();
+
+    const stop = () => {
+      setRecording(false);
+      setLiveMods([]);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.code === "Escape") {
+        stop();
+        return;
+      }
+      const modToken = MODIFIER_CODES[e.code];
+      if (modToken) {
+        held.add(modToken);
+        setLiveMods([...held]);
+        return;
+      }
+      const mods: string[] = [];
+      if (IS_MAC) {
+        if (e.metaKey) mods.push("CommandOrControl");
+        if (e.ctrlKey) mods.push("Control");
+      } else {
+        if (e.ctrlKey) mods.push("CommandOrControl");
+        if (e.metaKey) mods.push("Super");
+      }
+      if (e.altKey) mods.push("Alt");
+      if (e.shiftKey) mods.push("Shift");
+      onCapture([...mods, e.code].join("+"));
+      stop();
+    };
+
+    const onKeyUp = (e: KeyboardEvent) => {
+      const modToken = MODIFIER_CODES[e.code];
+      if (modToken) {
+        held.delete(modToken);
+        setLiveMods([...held]);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+    window.addEventListener("keyup", onKeyUp, true);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, true);
+      window.removeEventListener("keyup", onKeyUp, true);
+    };
+  }, [recording]);
+
+  return (
+    <span style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <kbd>
+        {recording ? (liveMods.length ? `${liveMods.join("+")}+…` : "press a key…") : value}
+      </kbd>
+      <button
+        className="btn secondary small"
+        onClick={() => setRecording((r) => !r)}
+      >
+        {recording ? "Cancel (Esc)" : "Change"}
+      </button>
+    </span>
   );
 }

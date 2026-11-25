@@ -20,7 +20,7 @@ pub struct ExtraFile {
 #[derive(Debug, Clone, Serialize)]
 pub struct ModelSpec {
     pub id: &'static str,
-    pub kind: &'static str, // "asr" | "llm" | "asr-openthai"
+    pub kind: &'static str, // "asr" | "llm"
     pub file_name: &'static str,
     pub url: &'static str,
     /// Hex sha256; empty = skip verification (size check only).
@@ -29,20 +29,9 @@ pub struct ModelSpec {
     pub label: &'static str,
     pub note: &'static str,
     /// Extra files required alongside `file_name`, in the same models dir —
-    /// for a model shipped as several parts (e.g. a sherpa-onnx
-    /// encoder/decoder/joiner/tokens set) rather than one file.
+    /// for a model shipped as several parts (e.g. a separate encoder/decoder
+    /// pair plus a tokenizer file) rather than one file.
     pub extra_files: &'static [ExtraFile],
-}
-
-/// File names for the OpenThai2.0 ASR Streaming multi-file model. Kept here
-/// (not in the feature-gated `openthai_stt` module) so the catalog entry
-/// below compiles in `--no-default-features` builds too; `openthai_stt`
-/// imports these same consts rather than redefining them.
-pub mod openthai_files {
-    pub const ENCODER: &str = "openthai2.0-encoder.int8.onnx";
-    pub const DECODER: &str = "openthai2.0-decoder.int8.onnx";
-    pub const JOINER: &str = "openthai2.0-joiner.int8.onnx";
-    pub const TOKENS: &str = "openthai2.0-tokens.txt";
 }
 
 /// Curated catalog. Sizes are approximate for progress UI; hash empty where
@@ -80,36 +69,6 @@ pub const CATALOG: &[ModelSpec] = &[
         label: "Whisper Large-v3 Q5 (~1.1 GB)",
         note: "Highest-accuracy vanilla Whisper; slower than Turbo.",
         extra_files: &[],
-    },
-    ModelSpec {
-        id: "openthai2.0-asr-streaming",
-        kind: "asr-openthai",
-        file_name: openthai_files::ENCODER,
-        url: "https://huggingface.co/ohmeet-com/openthai2.0-asr-streaming-sherpa-onnx-560ms-int8/resolve/main/encoder.int8.onnx",
-        sha256: "bd179e2f8cf293f96a49b17ccea26ab00618a76cf73f8b249276b5c7969beecd",
-        size_bytes: 657_573_653,
-        label: "OpenThai2.0 ASR Streaming (Thai, ~685 MB)",
-        note: "เครื่องยนต์แยก ไม่ใช่ Whisper — NVIDIA Nemotron-based streaming Thai ASR โดย OpenThaiGPT/iApp (OpenMDW-1.1, ใช้ธุรกิจได้). เลือกที่ Settings → Speech-to-text → OpenThai2.0.",
-        extra_files: &[
-            ExtraFile {
-                file_name: openthai_files::DECODER,
-                url: "https://huggingface.co/ohmeet-com/openthai2.0-asr-streaming-sherpa-onnx-560ms-int8/resolve/main/decoder.int8.onnx",
-                sha256: "512bcd720ad4c9124b0d24b5cd682ac6c35d73035e1eb22c74264284aafab7db",
-                size_bytes: 16_194_714,
-            },
-            ExtraFile {
-                file_name: openthai_files::JOINER,
-                url: "https://huggingface.co/ohmeet-com/openthai2.0-asr-streaming-sherpa-onnx-560ms-int8/resolve/main/joiner.int8.onnx",
-                sha256: "faa6e6931fda9b507042712e31e9f40b46f70eac19a9312d478398a49b1461c8",
-                size_bytes: 10_728_684,
-            },
-            ExtraFile {
-                file_name: openthai_files::TOKENS,
-                url: "https://huggingface.co/ohmeet-com/openthai2.0-asr-streaming-sherpa-onnx-560ms-int8/resolve/main/tokens.txt",
-                sha256: "d3d95eb99751ddceb900666d74b734af599d0dea1c5b2dae082671326fb4c8b1",
-                size_bytes: 171_990,
-            },
-        ],
     },
     ModelSpec {
         id: "qwen2.5-3b-instruct",
@@ -350,13 +309,5 @@ mod tests {
         std::fs::write(&p, b"tiny").unwrap();
         assert!(verify(&p, spec.sha256, spec.size_bytes).is_err());
         assert!(!p.exists(), "bad file removed");
-    }
-
-    #[test]
-    fn openthai_catalog_entry_has_extra_files() {
-        let spec = spec_by_id("openthai2.0-asr-streaming").unwrap();
-        assert_eq!(spec.kind, "asr-openthai");
-        assert_eq!(spec.extra_files.len(), 3);
-        assert!(spec_by_file(openthai_files::ENCODER).is_some());
     }
 }

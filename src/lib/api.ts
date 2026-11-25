@@ -4,7 +4,7 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export type OutputMode = "paste" | "type";
 export type HotkeyMode = "push_to_talk" | "toggle";
-export type SttProvider = "local" | "open_ai" | "google" | "open_thai";
+export type SttProvider = "local" | "open_ai" | "google";
 
 export interface Settings {
   hotkey: string;
@@ -28,7 +28,7 @@ export interface Settings {
 
 export interface ModelSpec {
   id: string;
-  kind: "asr" | "llm" | "asr-openthai";
+  kind: "asr" | "llm";
   file_name: string;
   url: string;
   sha256: string;

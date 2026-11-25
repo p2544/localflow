@@ -38,23 +38,14 @@ jobs:
       matrix:
         include:
           - os: windows-latest # x64 NSIS + MSI
-            args: ""
           # Apple Silicon (arm64) DMG with Metal. Intel Macs: build from
           # source — GitHub retired macos-13 Intel runners.
-          # asr-openthai (sherpa-onnx) disabled here: its prebuilt "shared"
-          # libs don't link cleanly on this runner yet. Windows keeps it.
           - os: macos-latest
-            args: "-- --no-default-features --features engines"
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      # No Swatinem/rust-cache here (unlike the `test` job): sherpa-onnx-sys's
-      # build script copies its downloaded DLLs straight into target/release
-      # as a side effect of running — a restored cache can leave cargo's
-      # fingerprint for that build script "unchanged" and skip re-running it,
-      # silently dropping those DLLs even though cargo thinks the crate is
-      # already built. A clean build avoids that entirely.
+      - uses: Swatinem/rust-cache@v2
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - name: CMake (macOS)
@@ -62,7 +53,7 @@ jobs:
         run: brew install cmake || true
       - run: npm ci
       - name: Build bundles
-        run: npm run tauri build -- ${{ matrix.args }}
+        run: npm run tauri build
       - uses: actions/upload-artifact@v4
         with:
           name: localflow-${{ matrix.os }}

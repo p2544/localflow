@@ -106,51 +106,12 @@ export default function ModelsPage({
     </>
   );
 
-  const openThaiModels = catalog.filter((m) => m.kind === "asr-openthai");
-
   return (
     <div>
       <h1>Models</h1>
       {error && <div className="card" style={{ color: "#f87171" }}>{error}</div>}
       {section("asr", "Speech recognition (Whisper)", settings.asr_model, (f) =>
         onChange({ ...settings, asr_model: f })
-      )}
-      {openThaiModels.length > 0 && (
-        <>
-          <h2>Thai streaming (OpenThai2.0)</h2>
-          <div className="card">
-            {openThaiModels.map((m) => {
-              const st = status[m.id];
-              const pct = progress[m.id] ?? 0;
-              return (
-                <div className="row" key={m.id}>
-                  <label>
-                    {m.label}
-                    <span className="hint">{m.note}</span>
-                  </label>
-                  {st?.installed ? (
-                    <button className="btn danger small" onClick={() => api.deleteModel(m.id).then(refresh)}>
-                      Delete
-                    </button>
-                  ) : busy[m.id] ? (
-                    <span style={{ display: "flex", gap: 8, alignItems: "center", flex: "0 0 220px" }}>
-                      <span className="progress">
-                        <div style={{ width: `${(pct * 100).toFixed(1)}%` }} />
-                      </span>
-                      <button className="btn secondary small" onClick={() => api.cancelDownload(m.id)}>
-                        ✕
-                      </button>
-                    </span>
-                  ) : (
-                    <button className="btn small" onClick={() => download(m)}>
-                      Download {fmtBytes(m.size_bytes + m.extra_files.reduce((s, f) => s + f.size_bytes, 0))}
-                    </button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </>
       )}
       {section("llm", "Cleanup LLM", settings.llm_model, (f) =>
         onChange({ ...settings, llm_model: f })

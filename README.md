@@ -18,7 +18,7 @@ hold hotkey ──► mic capture (cpal, 16 kHz mono)
                                  macOS: AX API → ⌘V fallback | Windows: SendInput / Ctrl+V
 ```
 
-- **Push-to-talk** (hold) or **hands-free toggle** mode
+- **Push-to-talk** (hold) or **hands-free toggle** mode — pick your own key combo in Settings by pressing it, no syntax to learn
 - **100+ languages** via Whisper (English + ไทย featured), selectable per session
 - **Personal dictionary** biases recognition and is protected from LLM "correction"
 - **History** (local SQLite, opt-out), **Scratchpad**, floating **recording pill**
@@ -54,12 +54,6 @@ LocalFlow is local-first by default — whisper.cpp does the transcribing and no
 the machine except the model download. Settings → Speech-to-text lets you switch the
 transcription engine to:
 
-- **OpenThai2.0 ASR Streaming** — a Thai-specialized streaming transducer (NVIDIA Nemotron
-  family, by OpenThaiGPT/iApp, OpenMDW-1.1 license) run locally via
-  [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx). Still fully offline, but a different
-  engine from whisper.cpp — needs its own ~685 MB model (encoder/decoder/joiner + tokens),
-  downloaded from the Models page. LocalFlow doesn't do live partial-text display, so it's
-  used the same way as whisper: record, release, get the final transcript.
 - **OpenAI** (cloud) — `gpt-4o-mini-transcribe`, `gpt-4o-transcribe`, or `whisper-1`, via your
   own API key
 - **Google Cloud** (cloud) — Speech-to-Text `v1/speech:recognize` (sync), via your own API key

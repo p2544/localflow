@@ -42,6 +42,25 @@ body { margin: 0; }
 .sidebar button:hover { background: #1e293b; color: #e2e8f0; }
 .sidebar button.active { background: #1e293b; color: #4ade80; }
 
+.sidebar-logo {
+  margin-top: auto;
+  display: flex;
+  justify-content: center;
+  padding: 14px 0 4px;
+}
+.sidebar-logo img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+  opacity: 0.9;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.sidebar-logo img:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
 .content {
   flex: 1;
   overflow-y: auto;

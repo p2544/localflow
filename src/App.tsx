@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, onNavigate, onPipelineEvent, type Settings, type StageTimings } from "./lib/api";
+import ghostLogo from "./assets/ghost-logo.png";
 import SettingsPage from "./components/SettingsPage";
 import ModelsPage from "./components/ModelsPage";
 import HistoryPage from "./components/HistoryPage";
@@ -68,6 +69,9 @@ export default function App() {
             {r.label}
           </button>
         ))}
+        <div className="sidebar-logo">
+          <img src={ghostLogo} alt="LocalFlow" />
+        </div>
       </nav>
       <main className="content">
         {route === "settings" && <SettingsPage settings={settings} onChange={save} />}

@@ -33,10 +33,6 @@ pub enum SttProvider {
     Local,
     OpenAi,
     Google,
-    /// OpenThai2.0 ASR Streaming (sherpa-onnx), fully offline like `Local`
-    /// but a different engine — see `openthai_stt`. Needs its own
-    /// multi-file model downloaded via the Models page.
-    OpenThai,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -178,15 +174,5 @@ mod tests {
         assert!(json.contains(r#""stt_provider":"open_ai""#));
         let back: Settings = serde_json::from_str(&json).unwrap();
         assert_eq!(back.stt_provider, SttProvider::OpenAi);
-    }
-
-    #[test]
-    fn open_thai_provider_matches_frontend_naming() {
-        let mut s = Settings::default();
-        s.stt_provider = SttProvider::OpenThai;
-        let json = serde_json::to_string(&s).unwrap();
-        assert!(json.contains(r#""stt_provider":"open_thai""#));
-        let back: Settings = serde_json::from_str(&json).unwrap();
-        assert_eq!(back.stt_provider, SttProvider::OpenThai);
     }
 }
