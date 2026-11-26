@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, type Settings } from "../lib/api";
+import { api, type ChimeStyle, type Settings } from "../lib/api";
 import { enable, disable } from "@tauri-apps/plugin-autostart";
 
 // Whisper language codes surfaced in the picker; "auto" = detect once per clip.
@@ -77,6 +77,39 @@ export default function SettingsPage({
             <option value="toggle">Hands-free (toggle)</option>
           </select>
         </div>
+        <div className="row">
+          <label>
+            Sound effects
+            <span className="hint">A soft cue when recording starts and stops.</span>
+          </label>
+          <input
+            type="checkbox"
+            checked={settings.sound_effects}
+            onChange={(e) => set("sound_effects", e.target.checked)}
+          />
+        </div>
+        {settings.sound_effects && (
+          <div className="row">
+            <label>Sound</label>
+            <span style={{ display: "flex", gap: 8 }}>
+              <select
+                value={settings.sound_style}
+                onChange={(e) => {
+                  const style = e.target.value as ChimeStyle;
+                  set("sound_style", style);
+                  api.previewChime(style);
+                }}
+              >
+                <option value="bubble">Bubble</option>
+                <option value="soft_pop">Soft pop</option>
+                <option value="tick">Tick</option>
+              </select>
+              <button className="btn secondary" onClick={() => api.previewChime(settings.sound_style)}>
+                ▶ Preview
+              </button>
+            </span>
+          </div>
+        )}
         <div className="row">
           <label>Language</label>
           <select value={settings.language} onChange={(e) => set("language", e.target.value)}>

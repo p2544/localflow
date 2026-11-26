@@ -5,10 +5,13 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 export type OutputMode = "paste" | "type";
 export type HotkeyMode = "push_to_talk" | "toggle";
 export type SttProvider = "local" | "open_ai" | "google";
+export type ChimeStyle = "soft_pop" | "bubble" | "tick";
 
 export interface Settings {
   hotkey: string;
   hotkey_mode: HotkeyMode;
+  sound_effects: boolean;
+  sound_style: ChimeStyle;
   language: string;
   asr_model: string;
   llm_model: string;
@@ -108,6 +111,7 @@ export const api = {
     invoke<void>("start_dictation", { captureOnly }),
   stopDictation: (discard = false) => invoke<void>("stop_dictation", { discard }),
   cleanTextPreview: (raw: string) => invoke<string>("clean_text_preview", { raw }),
+  previewChime: (style: ChimeStyle) => invoke<void>("preview_chime", { style }),
   openSettingsPane: (pane: string) => invoke<void>("open_settings_pane", { pane }),
   requestAccessibility: () => invoke<boolean>("request_accessibility"),
 };

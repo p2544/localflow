@@ -171,6 +171,12 @@ impl Worker {
         let _ = self.events.send(ev);
     }
 
+    fn chime(&self, chime: crate::chime::Chime) {
+        if self.settings.sound_effects {
+            crate::chime::play(self.settings.sound_style, chime);
+        }
+    }
+
     fn run(mut self, rx: Receiver<Cmd>) {
         // Preload models at startup when they're already on disk so the very
         // first dictation is warm (low-memory mode can unload them later).
@@ -260,6 +266,7 @@ impl Worker {
                 self.recorder = Some(r);
                 self.record_started = Some(Instant::now());
                 *self.recording_flag.lock() = true;
+                self.chime(crate::chime::Chime::Start);
                 self.emit(PipelineEvent::RecordingStarted);
                 // Warm models in parallel with the user speaking.
                 self.ensure_models_quietly();
@@ -280,6 +287,7 @@ impl Worker {
             .take()
             .map(|t| t.elapsed().as_millis() as u64)
             .unwrap_or(0);
+        self.chime(crate::chime::Chime::Stop);
         self.emit(PipelineEvent::RecordingStopped);
         if discard {
             let _ = recorder.stop();

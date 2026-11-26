@@ -59,6 +59,7 @@ pub fn run() {
             commands::start_dictation,
             commands::stop_dictation,
             commands::clean_text_preview,
+            commands::preview_chime,
             commands::open_settings_pane,
             commands::request_accessibility,
         ])

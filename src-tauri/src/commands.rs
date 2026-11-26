@@ -1,6 +1,7 @@
 //! Tauri IPC commands — thin wrappers over localflow-core.
 
 use crate::AppState;
+use localflow_core::chime::{self, Chime, ChimeStyle};
 use localflow_core::history::{open_db, History, HistoryEntry};
 use localflow_core::dictionary::Dictionary;
 use localflow_core::models;
@@ -170,6 +171,16 @@ pub fn start_dictation(state: State<AppState>, capture_only: Option<bool>) {
 pub fn stop_dictation(state: State<AppState>, discard: bool) {
     *state.toggle_active.lock() = false;
     state.pipeline.stop_recording(discard);
+}
+
+/// Plays a style's start cue, then its stop cue, so Settings can audition it.
+#[tauri::command]
+pub fn preview_chime(style: ChimeStyle) {
+    chime::play(style, Chime::Start);
+    std::thread::spawn(move || {
+        std::thread::sleep(std::time::Duration::from_millis(600));
+        chime::play(style, Chime::Stop);
+    });
 }
 
 /// Runs the cleanup layer on arbitrary text — used by the settings UI to

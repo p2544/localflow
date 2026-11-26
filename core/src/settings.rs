@@ -1,3 +1,4 @@
+use crate::chime::ChimeStyle;
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
@@ -41,6 +42,9 @@ pub struct Settings {
     /// Accelerator in Tauri global-shortcut syntax.
     pub hotkey: String,
     pub hotkey_mode: HotkeyMode,
+    /// Play a soft sound cue when recording starts and stops.
+    pub sound_effects: bool,
+    pub sound_style: ChimeStyle,
     /// BCP-47-ish whisper language code ("en", "th", ...) or "auto".
     pub language: String,
     /// Whisper model file name inside the models dir.
@@ -78,6 +82,8 @@ impl Default for Settings {
         Self {
             hotkey: "CommandOrControl+Shift+Space".into(),
             hotkey_mode: HotkeyMode::PushToTalk,
+            sound_effects: true,
+            sound_style: ChimeStyle::Bubble,
             language: "en".into(),
             asr_model: "ggml-large-v3-turbo-q5_0.bin".into(),
             llm_model: "qwen2.5-3b-instruct-q4_k_m.gguf".into(),

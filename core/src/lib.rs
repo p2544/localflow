@@ -7,6 +7,7 @@
 //! in Settings, which then sends dictation audio to that provider.
 
 pub mod audio;
+pub mod chime;
 pub mod cleanup;
 pub mod cloud_stt;
 pub mod dictionary;
